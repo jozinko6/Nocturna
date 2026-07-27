@@ -62,7 +62,7 @@ export function calculateBattleScore(
     ? attackerLevel < defenderLevel * CLAN_WAR_CONFIG.scoring.underdogThreshold
     : defenderLevel < attackerLevel * CLAN_WAR_CONFIG.scoring.underdogThreshold
 
-  let score = baseScore
+  let score: number = baseScore
   if (isUnderdog) score += CLAN_WAR_CONFIG.scoring.underdogBonus
   if (!isAttacker && result === 'win') score += CLAN_WAR_CONFIG.scoring.defensiveWinBonus
 

@@ -67,23 +67,23 @@ describe('Clans', () => {
       expect(quest).toHaveProperty('rewardGold')
       expect(quest).toHaveProperty('rewardXp')
       expect(quest).toHaveProperty('rewardClanXp')
-      expect(quest.targetCount).toBeGreaterThan(0)
-      expect(quest.rewardGold).toBeGreaterThan(0)
+      expect(quest!.targetCount).toBeGreaterThan(0)
+      expect(quest!.rewardGold).toBeGreaterThan(0)
     })
 
     it('scales targets with clan level', () => {
       const questLvl1 = generateClanQuest('collect_gold', 1)
       const questLvl5 = generateClanQuest('collect_gold', 5)
-      expect(questLvl5.targetCount).toBeGreaterThan(questLvl1.targetCount)
+      expect(questLvl5!.targetCount).toBeGreaterThan(questLvl1!.targetCount)
     })
 
     it('generates different quest types', () => {
       const types = ['collect_gold', 'collect_xp', 'pvp_wins', 'expeditions', 'training_sessions'] as const
       for (const type of types) {
         const quest = generateClanQuest(type, 1)
-        expect(quest.type).toBe(type)
-        expect(quest.title).toBeTruthy()
-        expect(quest.description).toBeTruthy()
+        expect(quest!.type).toBe(type)
+        expect(quest!.title).toBeTruthy()
+        expect(quest!.description).toBeTruthy()
       }
     })
   })

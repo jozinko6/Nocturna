@@ -11,7 +11,7 @@ export async function GET() {
     }
     
     const { data: userData } = await supabase.from('users').select('role').eq('id', user.id).single()
-    if (userData?.role !== 'admin') {
+    if (userData?.role !== 'administrator') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
     

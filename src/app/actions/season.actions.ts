@@ -51,7 +51,7 @@ export async function createSeasonAction(name: string, description?: string, dur
     if (userError || !user) return { success: false, error: 'Not authenticated' }
 
     const { data: userData } = await supabase.from('users').select('role').eq('id', user.id).single()
-    if (userData?.role !== 'admin') return { success: false, error: 'Unauthorized' }
+    if (userData?.role !== 'administrator') return { success: false, error: 'Unauthorized' }
 
     const db = getDb()
     const season = await createSeason(db, name, description ?? '', durationDays ?? 30)
@@ -73,7 +73,7 @@ export async function startSeasonAction(seasonId: string) {
     if (userError || !user) return { success: false, error: 'Not authenticated' }
 
     const { data: userData } = await supabase.from('users').select('role').eq('id', user.id).single()
-    if (userData?.role !== 'admin') return { success: false, error: 'Unauthorized' }
+    if (userData?.role !== 'administrator') return { success: false, error: 'Unauthorized' }
 
     const db = getDb()
     const season = await startSeason(db, seasonId)
@@ -95,7 +95,7 @@ export async function endSeasonAction(seasonId: string) {
     if (userError || !user) return { success: false, error: 'Not authenticated' }
 
     const { data: userData } = await supabase.from('users').select('role').eq('id', user.id).single()
-    if (userData?.role !== 'admin') return { success: false, error: 'Unauthorized' }
+    if (userData?.role !== 'administrator') return { success: false, error: 'Unauthorized' }
 
     const db = getDb()
     const rewards = await endSeason(db, seasonId)

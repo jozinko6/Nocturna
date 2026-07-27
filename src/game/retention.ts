@@ -1,5 +1,5 @@
 import { eq, desc, lt } from 'drizzle-orm';
-import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
+import type { DB } from '../lib/db/drizzle';
 import { loginStreaks, characters } from '../lib/db/schema';
 
 export const STREAK_BONUS_GOLD_PER_DAY = 25;
@@ -60,7 +60,7 @@ export function calculateStreakBonus(streak: number): {
 }
 
 export async function recordLogin(
-  db: PostgresJsDatabase<Record<string, never>>,
+  db: DB,
   characterId: string,
 ): Promise<{
   streak: number;
@@ -135,7 +135,7 @@ export async function recordLogin(
 }
 
 export async function getStreakInfo(
-  db: PostgresJsDatabase<Record<string, never>>,
+  db: DB,
   characterId: string,
 ): Promise<{
   currentStreak: number;
@@ -172,7 +172,7 @@ export async function getStreakInfo(
 }
 
 export async function claimStreakBonus(
-  db: PostgresJsDatabase<Record<string, never>>,
+  db: DB,
   characterId: string,
 ): Promise<{
   gold: number;
@@ -229,7 +229,7 @@ export async function claimStreakBonus(
 }
 
 export async function getStreakLeaderboard(
-  db: PostgresJsDatabase<Record<string, never>>,
+  db: DB,
   limit: number = 50,
 ): Promise<
   Array<{
@@ -260,9 +260,8 @@ export async function getStreakLeaderboard(
 }
 
 export async function resetStaleStreaks(
-  db: PostgresJsDatabase<Record<string, never>>,
+  db: DB,
 ): Promise<{ resetCount: number }> {
-  const today = todayDate();
   const yesterday = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10);
 
   const stale = await db

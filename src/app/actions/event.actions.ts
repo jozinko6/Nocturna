@@ -65,7 +65,7 @@ export async function createEventAction(eventType: string, durationHours?: numbe
     if (userError || !user) return { success: false, error: 'Not authenticated' }
 
     const { data: userData } = await supabase.from('users').select('role').eq('id', user.id).single()
-    if (userData?.role !== 'admin') return { success: false, error: 'Unauthorized' }
+    if (userData?.role !== 'administrator') return { success: false, error: 'Unauthorized' }
 
     const db = getDb()
     const event = await createEvent(db, validated.data.eventType, undefined, durationHours)
@@ -87,7 +87,7 @@ export async function startEventAction(eventId: string) {
     if (userError || !user) return { success: false, error: 'Not authenticated' }
 
     const { data: userData } = await supabase.from('users').select('role').eq('id', user.id).single()
-    if (userData?.role !== 'admin') return { success: false, error: 'Unauthorized' }
+    if (userData?.role !== 'administrator') return { success: false, error: 'Unauthorized' }
 
     const db = getDb()
     const event = await startEvent(db, eventId)
@@ -109,7 +109,7 @@ export async function endEventAction(eventId: string) {
     if (userError || !user) return { success: false, error: 'Not authenticated' }
 
     const { data: userData } = await supabase.from('users').select('role').eq('id', user.id).single()
-    if (userData?.role !== 'admin') return { success: false, error: 'Unauthorized' }
+    if (userData?.role !== 'administrator') return { success: false, error: 'Unauthorized' }
 
     const db = getDb()
     const result = await endEvent(db, eventId)
@@ -183,7 +183,7 @@ export async function addEventScoreAction(eventId: string, points: number) {
     if (userError || !user) return { success: false, error: 'Not authenticated' }
 
     const { data: userData } = await supabase.from('users').select('role').eq('id', user.id).single()
-    if (userData?.role !== 'admin') return { success: false, error: 'Unauthorized' }
+    if (userData?.role !== 'administrator') return { success: false, error: 'Unauthorized' }
 
     const { data: character, error: charError } = await supabase
       .from('characters')

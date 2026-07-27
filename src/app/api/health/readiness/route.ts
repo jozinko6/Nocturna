@@ -4,19 +4,16 @@ import { getServerEnv } from '@/config/env.server'
 export async function GET() {
   const checks: Record<string, { status: string; latencyMs?: number; error?: string }> = {}
   let healthy = true
+  let environment = process.env.APP_ENV || process.env.VERCEL_ENV || 'development'
 
   try {
     const start = Date.now()
     const { getDb } = await import('@/lib/db/drizzle')
     const db = getDb()
-    await db.execute({ sql: { sql: 'SELECT 1', values: [] } as any, params: [] } as any).catch(() => {
-      const postgres = (db as any).$client
-      if (postgres) return postgres`SELECT 1`
-      throw new Error('No DB client')
-    })
+    await db.$client`SELECT 1`
     checks.database = { status: 'ok', latencyMs: Date.now() - start }
-  } catch (e: any) {
-    checks.database = { status: 'error', error: e.message }
+  } catch (error: unknown) {
+    checks.database = { status: 'error', error: getErrorMessage(error) }
     healthy = false
   }
 
@@ -32,24 +29,28 @@ export async function GET() {
     } else {
       checks.redis = { status: 'skipped', error: 'Not configured' }
     }
-  } catch (e: any) {
-    checks.redis = { status: 'error', error: e.message }
+  } catch (error: unknown) {
+    checks.redis = { status: 'error', error: getErrorMessage(error) }
     healthy = false
   }
 
   try {
-    getServerEnv()
+    const env = getServerEnv()
+    environment = env.APP_ENV
     checks.config = { status: 'ok' }
-  } catch (e: any) {
-    checks.config = { status: 'error', error: e.message }
+  } catch (error: unknown) {
+    checks.config = { status: 'error', error: getErrorMessage(error) }
     healthy = false
   }
 
-  const env = getServerEnv()
   return NextResponse.json({
     status: healthy ? 'ready' : 'not_ready',
-    environment: env.APP_ENV,
+    environment,
     timestamp: new Date().toISOString(),
     checks,
   }, { status: healthy ? 200 : 503 })
+}
+
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : 'Unknown error'
 }

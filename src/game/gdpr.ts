@@ -1,5 +1,5 @@
 import { eq, and, or, desc } from 'drizzle-orm'
-import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js'
+import type { DB } from '@/lib/db/drizzle'
 import {
   users,
   profiles,
@@ -24,8 +24,6 @@ import {
 export const GDPR_REQUEST_TYPES = ['data_export', 'data_deletion', 'data_correction'] as const
 export const DATA_RETENTION_DAYS = 365
 export const EXPORT_FORMAT = 'json'
-
-type DB = PostgresJsDatabase
 
 export async function requestDataExport(db: DB, userId: string) {
   const existing = await db

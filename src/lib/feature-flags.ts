@@ -1,6 +1,6 @@
-import { drizzle } from 'drizzle-orm/postgres-js'
 import { eq } from 'drizzle-orm'
 import { featureFlags } from '@/lib/db/schema'
+import type { DB } from '@/lib/db/drizzle'
 
 export type FeatureFlagName =
   | 'registrations'
@@ -37,7 +37,7 @@ const flagCache = new Map<string, { flag: FeatureFlag; expiresAt: number }>()
 const CACHE_TTL_MS = 30_000
 
 export async function isFeatureEnabled(
-  db: ReturnType<typeof drizzle>,
+  db: DB,
   name: FeatureFlagName,
   context?: { userId?: string; clientVersion?: string },
 ): Promise<boolean> {
@@ -57,17 +57,17 @@ export async function isFeatureEnabled(
   return true
 }
 
-export async function getFlag(db: ReturnType<typeof drizzle>, name: string): Promise<FeatureFlag | null> {
+export async function getFlag(db: DB, name: string): Promise<FeatureFlag | null> {
   const cached = flagCache.get(name)
   if (cached && cached.expiresAt > Date.now()) return cached.flag
 
   const [row] = await db.select().from(featureFlags).where(eq(featureFlags.key, name)).limit(1)
   if (!row) return null
 
-  const value = row.value as any
+  const value = row.config as Partial<FeatureFlag> | null
   const flag: FeatureFlag = {
     name,
-    enabled: value?.enabled ?? true,
+    enabled: row.enabled,
     stagingOnly: value?.stagingOnly ?? false,
     rolloutPercent: value?.rolloutPercent ?? 100,
     allowlist: value?.allowlist ?? [],
@@ -81,21 +81,31 @@ export async function getFlag(db: ReturnType<typeof drizzle>, name: string): Pro
 }
 
 export async function setFlag(
-  db: ReturnType<typeof drizzle>,
+  db: DB,
   name: string,
   value: Partial<FeatureFlag>,
   adminId?: string,
 ): Promise<void> {
+  void adminId
   const existing = await getFlag(db, name)
   const merged = { ...existing, ...value, name }
 
+  const config = {
+    stagingOnly: merged.stagingOnly,
+    rolloutPercent: merged.rolloutPercent,
+    allowlist: merged.allowlist,
+    minVersion: merged.minVersion,
+    startsAt: merged.startsAt,
+    endsAt: merged.endsAt,
+  }
+
   await db.insert(featureFlags).values({
     key: name,
-    value: merged as any,
-    version: ((existing as any)?.version ?? 0) + 1,
+    enabled: merged.enabled ?? true,
+    config,
   }).onConflictDoUpdate({
     target: featureFlags.key,
-    set: { value: merged as any, version: ((existing as any)?.version ?? 0) + 1 },
+    set: { enabled: merged.enabled ?? true, config, updatedAt: new Date() },
   })
 
   flagCache.delete(name)

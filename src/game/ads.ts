@@ -1,5 +1,5 @@
 import { eq, and, sql, gte, count } from 'drizzle-orm'
-import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js'
+import type { DB } from '@/lib/db/drizzle'
 import {
   rewardedAdClaims,
   characters,
@@ -14,8 +14,6 @@ export const AD_COOLDOWN_SECONDS = 30
 export const AD_PROVIDER = 'nocturna_internal'
 
 export type RewardType = 'gold' | 'energy' | 'crystals'
-
-type DB = PostgresJsDatabase
 
 function startOfToday(): Date {
   const now = new Date()

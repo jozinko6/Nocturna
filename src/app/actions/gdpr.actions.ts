@@ -27,7 +27,7 @@ const processGdprRequestSchema = z.object({
 
 async function verifyAdmin(supabase: any, userId: string) {
   const { data } = await supabase.from('users').select('role').eq('id', userId).single()
-  if (data?.role !== 'admin') throw new Error('Unauthorized')
+  if (data?.role !== 'administrator') throw new Error('Unauthorized')
 }
 
 export async function requestDataExportAction() {

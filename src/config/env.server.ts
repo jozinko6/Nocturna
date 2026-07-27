@@ -3,21 +3,22 @@ import { z } from 'zod'
 const serverEnvSchema = z.object({
   // Core
   APP_ENV: z.enum(['development', 'preview', 'staging', 'production']).default('development'),
-  APP_URL: z.string().url(),
+  APP_URL: z.string().url().default('http://localhost:3000'),
 
   // Database
   DATABASE_URL: z.string().url(),
   DIRECT_URL: z.string().url().optional(),
 
   // Supabase
-  SUPABASE_URL: z.string().url(),
-  SUPABASE_ANON_KEY: z.string().min(1),
-  SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
+  NEXT_PUBLIC_SUPABASE_URL: z.string().url(),
+  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: z.string().min(1).optional(),
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1).optional(),
+  SUPABASE_SERVICE_ROLE_KEY: z.string().min(1).optional(),
 
   // Stripe
-  STRIPE_SECRET_KEY: z.string().min(1),
-  STRIPE_WEBHOOK_SECRET: z.string().min(1),
-  STRIPE_PUBLISHABLE_KEY: z.string().min(1),
+  STRIPE_SECRET_KEY: z.string().min(1).optional(),
+  STRIPE_WEBHOOK_SECRET: z.string().min(1).optional(),
+  NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: z.string().min(1).optional(),
 
   // Sentry
   SENTRY_DSN: z.string().url().optional(),
@@ -49,15 +50,16 @@ function validateServerEnv(): ServerEnv {
 
   if (!result.success) {
     const issues = result.error.issues.map(i => `  ${i.path.join('.')}: ${i.message}`)
-    const message = `Invalid server environment variables:\n${issues.join('\n')}`
+    throw new Error(`Invalid server environment variables:\n${issues.join('\n')}`)
+  }
 
-    if (process.env.APP_ENV === 'production') {
-      console.error(message)
-      process.exit(1)
-    }
-
-    console.warn(`[env] Non-production env warnings:\n${issues.join('\n')}`)
-    return serverEnvSchema.parse({ ...process.env, APP_ENV: process.env.APP_ENV || 'development' })
+  if (
+    !result.data.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY &&
+    !result.data.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  ) {
+    throw new Error(
+      'Invalid server environment variables:\n  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: Required'
+    )
   }
 
   return result.data

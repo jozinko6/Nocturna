@@ -101,5 +101,5 @@ export async function upgradeItem(characterId: string, characterItemId: string) 
 
   const result = calculateUpgradeResult(0)
 
-  return { success: true, ...result, multiplier: getUpgradeMultiplier(result.newLevel) }
+  return { ...result, success: true, multiplier: getUpgradeMultiplier(result.newLevel) }
 }

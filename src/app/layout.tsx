@@ -1,11 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
 import "./globals.css";
-
-const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin", "latin-ext"],
-});
 
 export const metadata: Metadata = {
   title: {
@@ -35,7 +29,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="sk" className={`${inter.variable} h-full antialiased`}>
+    <html lang="sk" className="h-full antialiased">
       <body className="min-h-full flex flex-col bg-[#0a0a0f] text-[#e2e8f0]">
         {children}
       </body>
