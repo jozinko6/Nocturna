@@ -1,0 +1,94 @@
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { signIn } from "@/app/actions/auth.actions";
+
+export default function LoginPage() {
+  const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError("");
+
+    if (!email || !password) {
+      setError("Vyplň všetky polia.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await signIn(email, password);
+      if (response.success) {
+        router.push("/dashboard");
+        router.refresh();
+      } else {
+        setError(response.error || "Nesprávne prihlasovacie údaje.");
+      }
+    } catch {
+      setError("Nastala neočakávaná chyba.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div>
+      <h2 className="text-lg font-semibold text-[#e2e8f0] mb-1">Prihlásenie</h2>
+      <p className="text-xs text-[#64748b] mb-5">
+        Vráť sa do sveta Nocturna
+      </p>
+
+      {error && (
+        <div className="mb-4 p-3 rounded-sm bg-[#2a1215] border border-[#5c2a2e] text-xs text-[#fca5a5]">
+          {error}
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <Input
+          label="Email"
+          type="email"
+          placeholder="tvoj@email.com"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+        />
+        <Input
+          label="Heslo"
+          type="password"
+          placeholder="Tvoje heslo"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+        />
+        <Button
+          type="submit"
+          variant="primary"
+          size="lg"
+          loading={loading}
+          className="w-full"
+        >
+          Prihlásiť sa
+        </Button>
+      </form>
+
+      <p className="mt-5 text-center text-xs text-[#64748b]">
+        Nemáš účet?{" "}
+        <Link
+          href="/register"
+          className="text-[#6366f1] hover:text-[#818cf8] transition-colors"
+        >
+          Registrovať sa
+        </Link>
+      </p>
+    </div>
+  );
+}

@@ -1,26 +1,173 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --color-bg-primary: #0a0a0f;
+  --color-bg-secondary: #0e0e1a;
+  --color-bg-tertiary: #12121e;
+  --color-bg-elevated: #1a1a2e;
+
+  --color-border: #2a2a44;
+  --color-border-subtle: #1e1e2e;
+  --color-border-accent: #3a3a5c;
+
+  --color-text-primary: #e2e8f0;
+  --color-text-secondary: #94a3b8;
+  --color-text-muted: #64748b;
+  --color-text-dim: #4a4a6c;
+
+  --color-accent-indigo: #6366f1;
+  --color-accent-red: #dc2626;
+  --color-accent-green: #22c55e;
+  --color-accent-blue: #3b82f6;
+  --color-accent-purple: #a855f7;
+  --color-accent-amber: #f59e0b;
+
+  --font-sans: var(--font-inter), system-ui, -apple-system, sans-serif;
+  --font-display: var(--font-inter), system-ui, -apple-system, sans-serif;
+
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-elevated: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-background: var(--color-bg-primary);
+  --color-foreground: var(--color-text-primary);
+  --font-sans: var(--font-inter);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #2a2a44 #0a0a0f;
+}
+
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+*::-webkit-scrollbar-track {
+  background: #0a0a0f;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: #2a2a44;
+  border-radius: 3px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: #3a3a5c;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans);
 }
+
+@font-face {
+  font-family: 'Nocturna Display';
+  font-weight: 700;
+  font-style: normal;
+}
+
+.game-text-shadow {
+  text-shadow: 0 0 20px rgba(99, 102, 241, 0.3), 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.game-glow-indigo {
+  box-shadow: 0 0 20px rgba(99, 102, 241, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.game-glow-red {
+  box-shadow: 0 0 20px rgba(220, 38, 38, 0.15);
+}
+
+.game-glow-green {
+  box-shadow: 0 0 20px rgba(34, 197, 94, 0.15);
+}
+
+.game-glow-amber {
+  box-shadow: 0 0 20px rgba(245, 158, 11, 0.15);
+}
+
+.game-stone-texture {
+  background-image:
+    radial-gradient(ellipse at 20% 50%, rgba(42, 42, 68, 0.15) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, rgba(30, 30, 46, 0.2) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 80%, rgba(18, 18, 30, 0.15) 0%, transparent 50%);
+}
+
+.particle-field {
+  position: relative;
+  overflow: hidden;
+}
+
+.particle-field::before,
+.particle-field::after {
+  content: '';
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  background: rgba(99, 102, 241, 0.3);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.particle-field::before {
+  top: 20%;
+  left: 10%;
+  box-shadow:
+    30vw 10vh 0 0 rgba(99, 102, 241, 0.2),
+    60vw 30vh 0 0 rgba(99, 102, 241, 0.15),
+    20vw 60vh 0 0 rgba(99, 102, 241, 0.25),
+    80vw 50vh 0 0 rgba(99, 102, 241, 0.1),
+    40vw 80vh 0 0 rgba(99, 102, 241, 0.2);
+  animation: particle-drift 20s linear infinite;
+}
+
+.particle-field::after {
+  top: 40%;
+  right: 5%;
+  box-shadow:
+    -20vw -10vh 0 0 rgba(139, 0, 0, 0.2),
+    -50vw 20vh 0 0 rgba(139, 0, 0, 0.15),
+    -10vw 40vh 0 0 rgba(139, 0, 0, 0.2),
+    -70vw -20vh 0 0 rgba(139, 0, 0, 0.1);
+  animation: particle-drift 25s linear infinite reverse;
+}
+
+@keyframes particle-drift {
+  0% { transform: translate(0, 0); }
+  25% { transform: translate(10px, -15px); }
+  50% { transform: translate(-5px, 10px); }
+  75% { transform: translate(15px, 5px); }
+  100% { transform: translate(0, 0); }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.5s ease-out;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.rarity-common { color: #94a3b8; }
+.rarity-uncommon { color: #4ade80; }
+.rarity-rare { color: #60a5fa; }
+.rarity-epic { color: #c084fc; }
+.rarity-legendary { color: #fbbf24; }
+.rarity-cursed { color: #f87171; }
+
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
