@@ -17,14 +17,14 @@ import {
 
 const submitReportSchema = z.object({
   reportedId: z.string().uuid('Invalid character ID'),
-  reason: z.enum(REPORT_REASONS as [string, ...string[]]),
+  reason: z.enum(REPORT_REASONS),
   description: z.string().max(2000).optional(),
   battleReportId: z.string().uuid().optional(),
 })
 
 const reviewReportSchema = z.object({
   reportId: z.string().uuid('Invalid report ID'),
-  action: z.enum(MODERATION_ACTION_TYPES as [string, ...string[]]),
+  action: z.enum(MODERATION_ACTION_TYPES),
   resolution: z.string().max(500).optional(),
 })
 
@@ -49,7 +49,7 @@ async function verifyAdmin(userId: string) {
     .eq('id', userId)
     .single()
 
-  if (error || !profile || profile.role !== 'admin') return false
+  if (error || !profile || profile.role !== 'administrator') return false
   return true
 }
 

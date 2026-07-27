@@ -1,3 +1,4 @@
+import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 function generateRequestId(): string {
@@ -16,18 +17,12 @@ const SECURITY_HEADERS: Record<string, string> = {
 
 const PUBLIC_PATHS = ['/', '/login', '/register', '/forgot-password', '/reset-password']
 const HEALTH_PATHS = ['/api/health/liveness', '/api/health/readiness', '/api/health/admin']
-const API_ROUTES = ['/api/']
 
-export function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl
-  const response = NextResponse.next()
-  
-  // Security headers
+function applySecurityHeaders(response: NextResponse): void {
   Object.entries(SECURITY_HEADERS).forEach(([key, value]) => {
     response.headers.set(key, value)
   })
-  
-  // Content Security Policy
+
   const csp = [
     "default-src 'self'",
     "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://js.stripe.com https://eu.posthog.com https://browser.sentry-cdn.com",
@@ -35,53 +30,92 @@ export function middleware(request: NextRequest) {
     "font-src 'self' https://fonts.gstatic.com",
     "img-src 'self' data: blob: https://*.supabase.co",
     "connect-src 'self' https://*.supabase.co https://eu.posthog.com https://sentry.io wss://*.supabase.co",
-    "frame-src https://js.stripe.com",
+    'frame-src https://js.stripe.com',
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",
   ].join('; ')
+
   response.headers.set('Content-Security-Policy', csp)
-  
-  // Request ID
-  const requestId = generateRequestId()
-  response.headers.set('x-request-id', requestId)
-  
-  // Bot/crawler blocking for game routes
+  response.headers.set('x-request-id', generateRequestId())
+}
+
+export async function proxy(request: NextRequest) {
+  const { pathname } = request.nextUrl
+  let response = NextResponse.next({ request })
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseKey =
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  if (supabaseUrl && supabaseKey) {
+    const supabase = createServerClient(supabaseUrl, supabaseKey, {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll()
+        },
+        setAll(cookiesToSet, headers) {
+          cookiesToSet.forEach(({ name, value }) =>
+            request.cookies.set(name, value)
+          )
+          response = NextResponse.next({ request })
+          cookiesToSet.forEach(({ name, value, options }) =>
+            response.cookies.set(name, value, options)
+          )
+          Object.entries(headers).forEach(([key, value]) =>
+            response.headers.set(key, value)
+          )
+        },
+      },
+    })
+
+    await supabase.auth.getClaims()
+  }
+
+  applySecurityHeaders(response)
+
   const userAgent = request.headers.get('user-agent') || ''
   const isBot = /bot|crawler|spider|scraper|curl|wget|python|gohttp/i.test(userAgent)
-  
-  // Maintenance mode
+  if (isBot && !PUBLIC_PATHS.includes(pathname) && !pathname.startsWith('/api/')) {
+    return new NextResponse(null, { status: 403, headers: response.headers })
+  }
+
   const maintenanceMode = process.env.MAINTENANCE_MODE || 'off'
-  const isHealthPath = HEALTH_PATHS.some(p => pathname.startsWith(p))
-  const isStaticAsset = pathname.includes('/_next/') || pathname.includes('/favicon') || pathname.includes('/manifest') || pathname.includes('/icons/') || pathname.includes('/images/')
-  
+  const isHealthPath = HEALTH_PATHS.some((path) => pathname.startsWith(path))
+  const isStaticAsset =
+    pathname.includes('/_next/') ||
+    pathname.includes('/favicon') ||
+    pathname.includes('/manifest') ||
+    pathname.includes('/icons/') ||
+    pathname.includes('/images/')
+
   if (maintenanceMode === 'full' && !isHealthPath && !isStaticAsset) {
     if (request.method !== 'GET') {
       return NextResponse.json(
         { error: { code: 'MAINTENANCE_MODE', message: 'Prebieha údržba. Skús to neskôr.' } },
-        { status: 503 }
+        { status: 503, headers: response.headers }
       )
     }
-    // Allow public paths and static assets
     if (PUBLIC_PATHS.includes(pathname) || isStaticAsset) {
       return response
     }
-    // Show maintenance page for other GET requests
     const maintenanceUrl = request.nextUrl.clone()
     maintenanceUrl.pathname = '/maintenance'
-    return NextResponse.rewrite(maintenanceUrl)
+    return NextResponse.rewrite(maintenanceUrl, { headers: response.headers })
   }
-  
-  // Read-only mode
-  if (maintenanceMode === 'read-only' && !isHealthPath) {
-    if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(request.method)) {
-      return NextResponse.json(
-        { error: { code: 'MAINTENANCE_MODE', message: 'Prebieha údržba. Zmeny nie sú povolené.' } },
-        { status: 503 }
-      )
-    }
+
+  if (
+    maintenanceMode === 'read-only' &&
+    !isHealthPath &&
+    ['POST', 'PUT', 'PATCH', 'DELETE'].includes(request.method)
+  ) {
+    return NextResponse.json(
+      { error: { code: 'MAINTENANCE_MODE', message: 'Prebieha údržba. Zmeny nie sú povolené.' } },
+      { status: 503, headers: response.headers }
+    )
   }
-  
+
   return response
 }
 

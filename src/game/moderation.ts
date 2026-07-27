@@ -1,5 +1,5 @@
-import { drizzle } from 'drizzle-orm/postgres-js'
 import { eq, and, sql, desc, asc, count, gte } from 'drizzle-orm'
+import type { DB } from '../lib/db/drizzle'
 import {
   playerReports,
   moderationActions,
@@ -21,15 +21,15 @@ export type ModerationActionType =
   | 'gold_revoke'
 export type DurationUnit = 'hours' | 'days' | 'permanent'
 
-export const REPORT_REASONS: ReportReason[] = [
+export const REPORT_REASONS = [
   'cheating',
   'offensive_name',
   'harassment',
   'exploit',
   'other',
-]
+] as const
 
-export const MODERATION_ACTION_TYPES: ModerationActionType[] = [
+export const MODERATION_ACTION_TYPES = [
   'warning',
   'mute',
   'kick',
@@ -37,7 +37,7 @@ export const MODERATION_ACTION_TYPES: ModerationActionType[] = [
   'name_change',
   'stat_reset',
   'gold_revoke',
-]
+] as const
 
 export const DURATION_UNITS: DurationUnit[] = ['hours', 'days', 'permanent']
 
@@ -59,7 +59,8 @@ const ACTION_SEVERITY: Record<string, SeverityEntry> = {
 
 const SEVERITY_ORDER = ['first_offense', 'second_offense', 'third_offense', 'fourth_offense']
 
-type Db = ReturnType<typeof drizzle>
+type Db = DB
+type Transaction = Parameters<Parameters<DB['transaction']>[0]>[0]
 
 function startOfDay(): Date {
   const now = new Date()
@@ -251,7 +252,7 @@ export async function dismissReport(
 }
 
 export async function performModerationAction(
-  db: Db,
+  db: Db | Transaction,
   moderatorId: string,
   targetCharacterId: string,
   actionType: ModerationActionType,
@@ -505,4 +506,3 @@ export async function getCharacterModerationSummary(db: Db, characterId: string)
   }
   return summary
 }
-

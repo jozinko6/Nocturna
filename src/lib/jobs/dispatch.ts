@@ -1,8 +1,8 @@
-import { drizzle } from 'drizzle-orm/postgres-js'
 import { backgroundJobs } from '@/lib/db/schema'
 import { sql } from 'drizzle-orm'
 import { type JobPayloadMap } from './registry'
 import { logger } from '@/lib/logging/logger'
+import type { DB } from '@/lib/db/drizzle'
 
 export interface DispatchOptions {
   idempotencyKey?: string
@@ -11,7 +11,7 @@ export interface DispatchOptions {
 }
 
 export async function dispatchJob<T extends keyof JobPayloadMap>(
-  db: ReturnType<typeof drizzle>,
+  db: DB,
   jobType: T,
   payload: JobPayloadMap[T],
   options: DispatchOptions = {},
@@ -34,10 +34,10 @@ export async function dispatchJob<T extends keyof JobPayloadMap>(
     .insert(backgroundJobs)
     .values({
       jobType,
-      payload: payload as any,
+      payload,
       idempotencyKey,
       priority: options.priority ?? 5,
-      scheduledAt: options.delayMs ? new Date(Date.now() + options.delayMs) : null,
+      scheduledAt: options.delayMs ? new Date(Date.now() + options.delayMs) : undefined,
     })
     .returning({ id: backgroundJobs.id })
     .execute()

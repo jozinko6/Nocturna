@@ -1,6 +1,6 @@
-import { drizzle } from 'drizzle-orm/postgres-js';
 import { eq, and, sql, desc } from 'drizzle-orm';
 import { liveEvents, liveEventParticipants, characters } from '../lib/db/schema';
+import type { DB } from '../lib/db/drizzle';
 
 const EVENT_TYPES = ['boss_rush', 'double_xp', 'double_gold', 'festival', 'invasion', 'challenge'] as const;
 type EventType = (typeof EVENT_TYPES)[number];
@@ -25,7 +25,7 @@ export function getEventConfig(eventType: EventType) {
 }
 
 export async function createEvent(
-  db: ReturnType<typeof drizzle>,
+  db: DB,
   eventType: EventType,
   startsAt?: Date,
   durationHours?: number,
@@ -71,7 +71,7 @@ export async function createEvent(
   return event;
 }
 
-export async function startEvent(db: ReturnType<typeof drizzle>, eventId: string) {
+export async function startEvent(db: DB, eventId: string) {
   const [event] = await db
     .update(liveEvents)
     .set({ status: 'active' })
@@ -82,7 +82,7 @@ export async function startEvent(db: ReturnType<typeof drizzle>, eventId: string
   return event;
 }
 
-export async function endEvent(db: ReturnType<typeof drizzle>, eventId: string) {
+export async function endEvent(db: DB, eventId: string) {
   const event = await db.query.liveEvents.findFirst({ where: eq(liveEvents.id, eventId) });
   if (!event) throw new Error('Event nenájdený');
 
@@ -98,7 +98,7 @@ export async function endEvent(db: ReturnType<typeof drizzle>, eventId: string) 
   return { ...ended, rankings };
 }
 
-export async function joinEvent(db: ReturnType<typeof drizzle>, eventId: string, characterId: string) {
+export async function joinEvent(db: DB, eventId: string, characterId: string) {
   const event = await db.query.liveEvents.findFirst({ where: eq(liveEvents.id, eventId) });
   if (!event || event.status !== 'active') throw new Error('Event nie je aktívny');
 
@@ -115,7 +115,7 @@ export async function joinEvent(db: ReturnType<typeof drizzle>, eventId: string,
   return participant;
 }
 
-export async function leaveEvent(db: ReturnType<typeof drizzle>, eventId: string, characterId: string) {
+export async function leaveEvent(db: DB, eventId: string, characterId: string) {
   const event = await db.query.liveEvents.findFirst({ where: eq(liveEvents.id, eventId) });
   if (!event || event.status !== 'active') throw new Error('Event nie je aktívny');
 
@@ -128,7 +128,7 @@ export async function leaveEvent(db: ReturnType<typeof drizzle>, eventId: string
   return deleted[0];
 }
 
-export async function addEventScore(db: ReturnType<typeof drizzle>, eventId: string, characterId: string, points: number) {
+export async function addEventScore(db: DB, eventId: string, characterId: string, points: number) {
   if (points <= 0) throw new Error('Body musia byť kladné');
 
   const event = await db.query.liveEvents.findFirst({ where: eq(liveEvents.id, eventId) });
@@ -148,7 +148,7 @@ export async function addEventScore(db: ReturnType<typeof drizzle>, eventId: str
   return updated.score;
 }
 
-export async function claimEventReward(db: ReturnType<typeof drizzle>, eventId: string, characterId: string) {
+export async function claimEventReward(db: DB, eventId: string, characterId: string) {
   const event = await db.query.liveEvents.findFirst({ where: eq(liveEvents.id, eventId) });
   if (!event) throw new Error('Event nenájdený');
   if (event.status !== 'ended') throw new Error('Event ešte neskončil');
@@ -194,11 +194,11 @@ export async function claimEventReward(db: ReturnType<typeof drizzle>, eventId: 
   return { gold: goldReward, crystals: crystalReward, rank };
 }
 
-export async function getActiveEvents(db: ReturnType<typeof drizzle>) {
+export async function getActiveEvents(db: DB) {
   return db.query.liveEvents.findMany({ where: eq(liveEvents.status, 'active') });
 }
 
-export async function getEventRankings(db: ReturnType<typeof drizzle>, eventId: string, limit = 100) {
+export async function getEventRankings(db: DB, eventId: string, limit = 100) {
   const rows = await db
     .select({
       characterId: liveEventParticipants.characterId,
@@ -216,7 +216,7 @@ export async function getEventRankings(db: ReturnType<typeof drizzle>, eventId: 
   }));
 }
 
-export async function getCharacterEventStatus(db: ReturnType<typeof drizzle>, eventId: string, characterId: string) {
+export async function getCharacterEventStatus(db: DB, eventId: string, characterId: string) {
   const participant = await db.query.liveEventParticipants.findFirst({
     where: and(eq(liveEventParticipants.eventId, eventId), eq(liveEventParticipants.characterId, characterId)),
   });
@@ -238,7 +238,7 @@ export async function getCharacterEventStatus(db: ReturnType<typeof drizzle>, ev
   };
 }
 
-export async function cleanupExpiredEvents(db: ReturnType<typeof drizzle>) {
+export async function cleanupExpiredEvents(db: DB) {
   const now = new Date();
 
   const expired = await db

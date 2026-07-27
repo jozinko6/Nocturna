@@ -1,5 +1,4 @@
 import { STORY_CONFIG, type StoryChapter, type StoryMission } from '@/lib/config/story'
-import { calculateXpForLevel } from './formulas'
 
 export interface StoryProgress {
   campaignSlug: string
@@ -66,7 +65,8 @@ export function canStartMission(
     }
   }
 
-  if (!mission.repeatable && progress.completedMissions.includes(mission.slug)) {
+  const repeatable = 'repeatable' in mission && mission.repeatable === true
+  if (!repeatable && progress.completedMissions.includes(mission.slug)) {
     return { allowed: false, reason: 'Misia už bola dokončená.' }
   }
 

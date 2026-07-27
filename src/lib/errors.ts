@@ -27,7 +27,9 @@ export type ErrorCode =
   | 'BETA_ACCESS_REQUIRED'
   | 'INTERNAL_ERROR'
 
-const ERROR_MAP: Record<ErrorCode, { message: string; status: number; logLevel: 'warn' | 'error' | 'fatal' }> = {
+type LogLevel = 'info' | 'warn' | 'error' | 'fatal'
+
+const ERROR_MAP: Record<ErrorCode, { message: string; status: number; logLevel: LogLevel }> = {
   AUTH_REQUIRED: { message: 'Prihlásenie je povinné.', status: 401, logLevel: 'warn' },
   ACCESS_DENIED: { message: 'Nemáš oprávnenie na túto akciu.', status: 403, logLevel: 'warn' },
   VALIDATION_FAILED: { message: 'Neplatné údaje.', status: 400, logLevel: 'warn' },
@@ -60,7 +62,7 @@ const ERROR_MAP: Record<ErrorCode, { message: string; status: number; logLevel: 
 export class AppError extends Error {
   code: ErrorCode
   status: number
-  logLevel: 'warn' | 'error' | 'fatal'
+  logLevel: LogLevel
   requestId?: string
   
   constructor(code: ErrorCode, requestId?: string, cause?: Error) {

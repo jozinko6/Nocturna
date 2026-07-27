@@ -5,6 +5,7 @@ import { characterStoryProgress, characterStoryDecisions, characters } from '@/l
 import { eq, and } from 'drizzle-orm'
 import { canStartCampaign, canUnlockChapter, canStartMission, completeMission, makeDecision, getDecisionConsequence, calculateMissionReward, getCompletionPercentage } from '@/game/story'
 import { STORY_CONFIG } from '@/lib/config/story'
+import type { StoryMission } from '@/lib/config/story'
 
 export async function getStoryProgress(characterId: string, campaignSlug: string) {
   const db = getDb()
@@ -60,7 +61,7 @@ export async function completeStoryMission(characterId: string, missionSlug: str
   }).where(eq(characterStoryProgress.id, progress.id))
 
   const mission = STORY_CONFIG.chapters
-    .flatMap(ch => ch.missions)
+    .flatMap((chapter) => chapter.missions as readonly StoryMission[])
     .find(m => m.slug === missionSlug)
 
   const [character] = await db.select().from(characters).where(eq(characters.id, characterId)).limit(1)

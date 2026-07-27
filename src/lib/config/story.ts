@@ -183,6 +183,11 @@ export const STORY_CONFIG = {
 } as const
 
 export type StoryChapter = typeof STORY_CONFIG.chapters[number]
-export type StoryMission = StoryChapter['missions'][number]
+export type StoryMission = {
+  slug: string
+  nameKey: string
+  type: string
+  repeatable?: boolean
+}
 export type StoryBoss = typeof STORY_CONFIG.bosses[number]
 export type StoryDecision = typeof STORY_CONFIG.decisions[number]

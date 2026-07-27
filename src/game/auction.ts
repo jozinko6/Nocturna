@@ -48,8 +48,10 @@ export function canCreateListing(
   if (characterLevel < (trust.requirements.minLevel || 0)) {
     return { allowed: false, reason: `Potrebuješ úroveň ${trust.requirements.minLevel}.`, maxListings }
   }
-  if (expeditionsCompleted < (trust.requirements.minExpeditions || 0)) {
-    return { allowed: false, reason: `Potrebuješ aspoň ${trust.requirements.minExpeditions} výprav.`, maxListings }
+  const minExpeditions =
+    'minExpeditions' in trust.requirements ? trust.requirements.minExpeditions : 0
+  if (expeditionsCompleted < minExpeditions) {
+    return { allowed: false, reason: `Potrebuješ aspoň ${minExpeditions} výprav.`, maxListings }
   }
   if (activeListingCount >= maxListings) {
     return { allowed: false, reason: `Maximálne ${maxListings} aktívnych ponúk.`, maxListings }

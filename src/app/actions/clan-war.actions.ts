@@ -35,8 +35,8 @@ export async function declareWar(
     defenderMembers.length,
     attackerClan.level,
     defenderClan.level,
-    attackerMembers.reduce((sum, m) => sum + (m.contributionScore || 0), 0),
-    defenderMembers.reduce((sum, m) => sum + (m.contributionScore || 0), 0),
+    attackerMembers.reduce((sum, m) => sum + m.contributionGold + m.contributionXp, 0),
+    defenderMembers.reduce((sum, m) => sum + m.contributionGold + m.contributionXp, 0),
     false,
     false,
   )

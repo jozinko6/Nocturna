@@ -7,12 +7,12 @@ import type { AnalyticsEvent } from '@/game/analytics'
 
 const trackEventSchema = z.object({
   event: z.string().min(1, 'Event name is required'),
-  properties: z.record(z.unknown()),
+  properties: z.record(z.string(), z.unknown()),
 })
 
 async function verifyAdmin(supabase: any, userId: string) {
   const { data } = await supabase.from('users').select('role').eq('id', userId).single()
-  if (data?.role !== 'admin') throw new Error('Unauthorized')
+  if (data?.role !== 'administrator') throw new Error('Unauthorized')
 }
 
 export async function trackEventAction(event: string, properties: Record<string, unknown>) {

@@ -23,17 +23,7 @@ export async function signUp(email: string, password: string, displayName: strin
 
     const supabase = await createClient()
 
-    const { data: existing } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('display_name', displayName)
-      .maybeSingle()
-
-    if (existing) {
-      return { success: false, error: 'Display name already taken' }
-    }
-
-    const { data: authData, error: authError } = await supabase.auth.signUp({
+    const { error: authError } = await supabase.auth.signUp({
       email,
       password,
       options: { data: { display_name: displayName } },
@@ -41,18 +31,6 @@ export async function signUp(email: string, password: string, displayName: strin
 
     if (authError) {
       return { success: false, error: authError.message }
-    }
-
-    if (authData.user) {
-      const { error: profileError } = await supabase.from('profiles').insert({
-        user_id: authData.user.id,
-        display_name: displayName,
-      })
-
-      if (profileError) {
-        console.error('Profile creation error:', profileError)
-        return { success: false, error: 'Failed to create user profile' }
-      }
     }
 
     return {
@@ -101,9 +79,16 @@ export async function signOut() {
 export async function getSession() {
   try {
     const supabase = await createClient()
-    const { data: { session }, error } = await supabase.auth.getSession()
+    const { data, error } = await supabase.auth.getClaims()
     if (error) return { success: false, error: error.message }
-    return { success: true, data: { session } }
+    return {
+      success: true,
+      data: {
+        session: data?.claims
+          ? { user: { id: data.claims.sub }, expiresAt: data.claims.exp }
+          : null,
+      },
+    }
   } catch (error) {
     console.error('Get session error:', error)
     return { success: false, error: 'An unexpected error occurred' }

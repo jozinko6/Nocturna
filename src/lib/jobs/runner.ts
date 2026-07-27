@@ -1,8 +1,8 @@
-import { drizzle } from 'drizzle-orm/postgres-js'
 import { and, eq, or, lt, sql } from 'drizzle-orm'
 import { backgroundJobs } from '@/lib/db/schema'
 import { getJobHandler } from './registry'
 import { logger } from '@/lib/logging/logger'
+import type { DB } from '@/lib/db/drizzle'
 
 const POLL_INTERVAL_MS = 5_000
 const BATCH_SIZE = 10
@@ -10,7 +10,7 @@ const BATCH_SIZE = 10
 let isRunning = false
 let pollTimer: NodeJS.Timeout | null = null
 
-export async function startJobRunner(db: ReturnType<typeof drizzle>) {
+export async function startJobRunner(db: DB) {
   if (isRunning) return
   isRunning = true
   logger.info('Job runner started')
@@ -35,7 +35,7 @@ export async function startJobRunner(db: ReturnType<typeof drizzle>) {
         )
         .orderBy(backgroundJobs.priority)
         .limit(BATCH_SIZE)
-        .for('UPDATE')
+        .for('update')
         .execute()
       
       for (const job of jobs) {
@@ -62,7 +62,7 @@ export function stopJobRunner() {
   logger.info('Job runner stopped')
 }
 
-async function processJob(db: ReturnType<typeof drizzle>, job: typeof backgroundJobs.$inferSelect) {
+async function processJob(db: DB, job: typeof backgroundJobs.$inferSelect) {
   const handler = getJobHandler(job.jobType)
   if (!handler) {
     logger.warn(`Unknown job type: ${job.jobType}`, { requestId: job.id })
@@ -91,7 +91,7 @@ async function processJob(db: ReturnType<typeof drizzle>, job: typeof background
     )
     
     await Promise.race([
-      handler.handler(job.payload as any),
+      handler.handler(job.payload),
       timeoutPromise,
     ])
     
@@ -121,7 +121,7 @@ async function processJob(db: ReturnType<typeof drizzle>, job: typeof background
   }
 }
 
-async function markFailed(db: ReturnType<typeof drizzle>, id: string, error: string) {
+async function markFailed(db: DB, id: string, error: string) {
   await db
     .update(backgroundJobs)
     .set({ status: 'dead', failedAt: new Date(), lastError: error })
