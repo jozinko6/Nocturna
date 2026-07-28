@@ -74,6 +74,12 @@ test.describe('New Player Vertical Slice', () => {
         await expect(page).toHaveURL(/\/expeditions$/, { timeout: 30000 })
         await expect(page.getByText(characterName, { exact: true })).toBeVisible()
       })
+
+      await test.step('sign out and clear the player session', async () => {
+        await page.goto('/settings')
+        await page.getByRole('button', { name: 'Odhlásiť sa' }).click()
+        await expect(page).toHaveURL(/\/login$/, { timeout: 30000 })
+      })
     } finally {
       await admin.auth.admin.deleteUser(userId)
     }

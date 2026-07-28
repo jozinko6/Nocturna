@@ -1,15 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Globe, Volume2, Bell, Shield, Trash2, Download } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
-import { signOut } from "@/app/actions/auth.actions";
+import { createClient } from "@/lib/supabase/client";
 
 export default function SettingsPage() {
-  const router = useRouter();
   const [language, setLanguage] = useState<"sk" | "en">("sk");
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [notifEnabled, setNotifEnabled] = useState(true);
@@ -20,8 +18,9 @@ export default function SettingsPage() {
   async function handleLogout() {
     setLoggingOut(true);
     try {
-      await signOut();
-      router.push("/login");
+      const supabase = createClient();
+      await supabase.auth.signOut();
+      window.location.assign("/login");
     } finally {
       setLoggingOut(false);
     }
