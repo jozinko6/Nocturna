@@ -10,7 +10,10 @@ import { maxHp, levelFromExperience, calculateStatTotal, attackPower } from '@/g
 const createCharacterSchema = z.object({
   name: z.string().min(2, 'Character name must be at least 2 characters').max(30, 'Character name must be 30 characters or less'),
   factionId: z.string().uuid('Invalid faction ID'),
-  portraitUrl: z.string().url('Invalid portrait URL').optional(),
+  portraitUrl: z.union([
+    z.string().url('Invalid portrait URL'),
+    z.string().regex(/^\/[a-zA-Z0-9/_-]+\.(?:jpg|jpeg|png|webp)$/, 'Invalid portrait URL'),
+  ]).optional(),
 })
 
 export async function createCharacter(name: string, factionId: string, portraitUrl?: string) {
