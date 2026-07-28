@@ -7,10 +7,10 @@
  * Usage:  npx tsx scripts/seed-vertical-slice.ts
  */
 
-import 'dotenv/config'
+import { createHash } from 'node:crypto'
+import { loadEnvConfig } from '@next/env'
 import { drizzle } from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
-import { v4 as uuidv4 } from 'uuid'
 
 import * as schema from '../src/lib/db/schema'
 import { allItems } from '../src/lib/config/items'
@@ -19,7 +19,9 @@ import { allItems } from '../src/lib/config/items'
 // Database connection
 // ---------------------------------------------------------------------------
 
-const dbUrl = process.env.DATABASE_URL
+loadEnvConfig(process.cwd())
+
+const dbUrl = process.env.DATABASE_URL ?? process.env.POSTGRES_URL
 if (!dbUrl) {
   console.error('DATABASE_URL is not set. Aborting seed.')
   process.exit(1)
@@ -33,17 +35,16 @@ const db = drizzle(client, { schema })
 // ---------------------------------------------------------------------------
 
 function stableId(input: string): string {
-  let hash = 0
-  for (let i = 0; i < input.length; i++) {
-    hash = ((hash << 5) - hash + input.charCodeAt(i)) | 0
-  }
-  const abs = Math.abs(hash)
-  return (
-    '00000000-0000-4000-8' +
-    abs.toString(16).padStart(8, '0').slice(0, 8) +
-    '-' +
-    uuidv4().slice(13)
-  )
+  const hex = createHash('sha256').update(input).digest('hex')
+  const variant = ((Number.parseInt(hex[16], 16) & 0x3) | 0x8).toString(16)
+
+  return [
+    hex.slice(0, 8),
+    hex.slice(8, 12),
+    `4${hex.slice(13, 16)}`,
+    `${variant}${hex.slice(17, 20)}`,
+    hex.slice(20, 32),
+  ].join('-')
 }
 
 function jsonb(value: unknown): string {
@@ -264,10 +265,21 @@ async function main() {
     'users',
   ]
 
-  for (const table of tablesInOrder) {
-    await client.unsafe(`DELETE FROM "${table}"`)
+  const existingRows = await client<{ tableName: string }[]>`
+    select table_name as "tableName"
+    from information_schema.tables
+    where table_schema = 'public' and table_type = 'BASE TABLE'
+  `
+  const existingTables = new Set(existingRows.map((row) => row.tableName))
+  const tablesToClear = tablesInOrder.filter((table) => existingTables.has(table))
+
+  if (tablesToClear.length > 0) {
+    const quotedTables = tablesToClear
+      .map((table) => `"${table.replaceAll('"', '""')}"`)
+      .join(', ')
+    await client.unsafe(`TRUNCATE TABLE ${quotedTables} RESTART IDENTITY CASCADE`)
   }
-  console.log(`  ✓ Cleared ${tablesInOrder.length} tables`)
+  console.log(`  ✓ Cleared ${tablesToClear.length} tables`)
 
   // ── Factions ───────────────────────────────────────────────────────────
   console.log('▸ Seeding factions...')

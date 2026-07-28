@@ -6,7 +6,8 @@ const serverEnvSchema = z.object({
   APP_URL: z.string().url().default('http://localhost:3000'),
 
   // Database
-  DATABASE_URL: z.string().url(),
+  DATABASE_URL: z.string().url().optional(),
+  POSTGRES_URL: z.string().url().optional(),
   DIRECT_URL: z.string().url().optional(),
 
   // Supabase
@@ -41,7 +42,18 @@ const serverEnvSchema = z.object({
 
   // Maintenance
   MAINTENANCE_MODE: z.enum(['off', 'read-only', 'full']).default('off'),
-})
+}).superRefine((env, ctx) => {
+  if (!env.DATABASE_URL && !env.POSTGRES_URL) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['DATABASE_URL'],
+      message: 'DATABASE_URL or POSTGRES_URL is required',
+    })
+  }
+}).transform((env) => ({
+  ...env,
+  DATABASE_URL: env.DATABASE_URL ?? env.POSTGRES_URL!,
+}))
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>
 

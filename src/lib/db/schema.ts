@@ -23,10 +23,10 @@ export const users = pgTable('users', {
   banned: boolean('banned').notNull().default(false),
   banReason: text('ban_reason'),
   role: text('role', {
-    enum: ['support', 'moderator', 'economy_manager', 'administrator'],
+    enum: ['player', 'support', 'moderator', 'economy_manager', 'administrator'],
   })
     .notNull()
-    .default('support'),
+    .default('player'),
 });
 
 // ─── Profiles ───────────────────────────────────────────────────────────────
