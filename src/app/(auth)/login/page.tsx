@@ -2,13 +2,11 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { signIn } from "@/app/actions/auth.actions";
 
 export default function LoginPage() {
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -27,8 +25,12 @@ export default function LoginPage() {
     try {
       const response = await signIn(email, password);
       if (response.success) {
-        router.push("/dashboard");
-        router.refresh();
+        const requestedPath = new URLSearchParams(window.location.search).get("next");
+        const destination =
+          requestedPath?.startsWith("/") && !requestedPath.startsWith("//")
+            ? requestedPath
+            : "/dashboard";
+        window.location.assign(destination);
       } else {
         setError(response.error || "Nesprávne prihlasovacie údaje.");
       }
