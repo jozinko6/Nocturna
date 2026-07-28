@@ -11,6 +11,10 @@ test.describe('New Player Vertical Slice', () => {
   test('protects private pages and completes onboarding', async ({ page }) => {
     test.setTimeout(120000)
     test.skip(!supabaseUrl || !serviceKey, 'Supabase admin credentials are required')
+    page.on('pageerror', (error) => console.error(`Browser page error: ${error.message}`))
+    page.on('console', (message) => {
+      if (message.type() === 'error') console.error(`Browser console error: ${message.text()}`)
+    })
 
     const admin = createClient(supabaseUrl!, serviceKey!, {
       auth: { autoRefreshToken: false, persistSession: false },
@@ -46,6 +50,7 @@ test.describe('New Player Vertical Slice', () => {
       })
 
       await test.step('choose faction and character identity', async () => {
+        await expect(page.getByText('Sangvari', { exact: true })).toBeVisible({ timeout: 15000 })
         await page.getByText('Sangvari', { exact: true }).click()
         await page.getByRole('button', { name: 'Pokračovať' }).click()
 
