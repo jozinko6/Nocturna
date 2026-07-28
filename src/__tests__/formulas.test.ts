@@ -12,19 +12,23 @@ import {
 
 describe('trainingCost', () => {
   it('returns base cost for level 1', () => {
-    expect(trainingCost(1)).toBe(100)
+    expect(trainingCost(1)).toBe(10)
   })
 
   it('scales superlinearly', () => {
-    expect(trainingCost(2)).toBe(313)
-    expect(trainingCost(3)).toBe(612)
-    expect(trainingCost(5)).toBe(1423)
+    expect(trainingCost(2)).toBe(31)
+    expect(trainingCost(3)).toBe(61)
+    expect(trainingCost(5)).toBe(142)
   })
 
   it('grows fast at higher levels', () => {
-    expect(trainingCost(10)).toBe(4466)
-    expect(trainingCost(15)).toBe(8720)
-    expect(trainingCost(20)).toBe(14018)
+    expect(trainingCost(10)).toBe(446)
+    expect(trainingCost(15)).toBe(872)
+    expect(trainingCost(20)).toBe(1401)
+  })
+
+  it('allows a new character to afford the first upgrade', () => {
+    expect(trainingCost(5)).toBeLessThanOrEqual(200)
   })
 
   it('never returns a fractional cost', () => {

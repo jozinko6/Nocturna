@@ -11,6 +11,7 @@ import { simulateBattle } from '@/game/combat'
 import { calculateExpeditionReward } from '@/game/rewards'
 import { difficultyMultipliers, DifficultyModifier, getEventsForLevel } from '@/lib/config/expeditions'
 import { getEnemyById } from '@/lib/config/enemies'
+import { getRegionById } from '@/lib/config/regions'
 
 const ENERGY_COSTS: Record<string, number> = {
   safe: 10,
@@ -27,7 +28,7 @@ const DURATION_SECONDS: Record<string, number> = {
 }
 
 const startExpeditionSchema = z.object({
-  regionId: z.string().uuid('Invalid region ID'),
+  regionId: z.string().refine((regionId) => Boolean(getRegionById(regionId)), 'Invalid region ID'),
   difficulty: z.enum(['safe', 'uncertain', 'dangerous', 'lethal']),
 })
 
@@ -84,13 +85,6 @@ export async function startExpedition(regionId: string, difficulty: 'safe' | 'un
       .eq('status', 'in_progress')
       .maybeSingle()
     if (activeActivity) return { success: false, error: 'Already in an active expedition' }
-
-    const { data: region } = await supabase
-      .from('regions')
-      .select('id')
-      .eq('id', regionId)
-      .maybeSingle()
-    if (!region) return { success: false, error: 'Invalid region' }
 
     const now = new Date()
     const duration = DURATION_SECONDS[difficulty]
@@ -285,7 +279,11 @@ export async function completeExpedition(expeditionId: string) {
 
     const { error: updateError } = await supabase
       .from('activities')
-      .update({ status: 'completed', claimed_at: null })
+      .update({
+        status: 'completed',
+        claimed_at: null,
+        config: { ...config, battleReportId: battleReport.id },
+      })
       .eq('id', expeditionId)
 
     if (updateError) {
@@ -492,8 +490,7 @@ export async function getExpeditionResult(expeditionId: string) {
       .from('activities')
       .select(`
         *,
-        activity_rewards (*),
-        battle_reports (*)
+        activity_rewards (*)
       `)
       .eq('id', expeditionId)
       .eq('character_id', character.id)
@@ -501,7 +498,25 @@ export async function getExpeditionResult(expeditionId: string) {
 
     if (expError || !expedition) return { success: false, error: 'Expedition not found' }
 
-    return { success: true, data: { expedition } }
+    const config = expedition.config as { battleReportId?: string } | null
+    let battleReports: unknown[] = []
+
+    if (config?.battleReportId) {
+      const { data: battleReport } = await supabase
+        .from('battle_reports')
+        .select('*')
+        .eq('id', config.battleReportId)
+        .maybeSingle()
+
+      if (battleReport) battleReports = [battleReport]
+    }
+
+    return {
+      success: true,
+      data: {
+        expedition: { ...expedition, battle_reports: battleReports },
+      },
+    }
   } catch (error) {
     console.error('Get expedition result error:', error)
     return { success: false, error: 'An unexpected error occurred' }

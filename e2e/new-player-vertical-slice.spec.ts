@@ -75,6 +75,29 @@ test.describe('New Player Vertical Slice', () => {
         await expect(page.getByText(characterName, { exact: true })).toBeVisible()
       })
 
+      await test.step('start a configured expedition', async () => {
+        await page
+          .getByRole('button', {
+            name: 'Spustiť výpravu: Mesto bez svitania, Bezpečná',
+          })
+          .click()
+        await expect(page).toHaveURL(/\/expeditions\/[0-9a-f-]+$/, { timeout: 30000 })
+        await expect(page.getByText('Prebieha', { exact: true })).toBeVisible()
+      })
+
+      await test.step('train a starting attribute with the initial gold', async () => {
+        await page.goto('/character/training')
+        await expect(page.getByText('142 zlatých').first()).toBeVisible()
+
+        const trainButton = page.getByRole('button', { name: 'Trénovať' }).first()
+        await expect(trainButton).toBeEnabled()
+        await trainButton.click()
+        await page.getByRole('button', { name: 'Potvrdiť' }).click()
+
+        await expect(page.getByText('58', { exact: true })).toBeVisible()
+        await expect(page.getByText('6', { exact: true }).first()).toBeVisible()
+      })
+
       await test.step('sign out and clear the player session', async () => {
         await page.goto('/settings')
         await page.getByRole('button', { name: 'Odhlásiť sa' }).click()

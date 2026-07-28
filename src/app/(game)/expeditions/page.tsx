@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Clock, Zap, ChevronRight } from "lucide-react";
+import { AlertTriangle, Clock, Zap, ChevronRight } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -24,6 +24,7 @@ export default function ExpeditionsPage() {
   const [expeditions, setExpeditions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [starting, setStarting] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -39,15 +40,17 @@ export default function ExpeditionsPage() {
   }, []);
 
   async function handleStartExpedition(regionId: string, difficulty: "safe" | "uncertain" | "dangerous" | "lethal") {
-    setStarting(regionId);
+    setStarting(`${regionId}:${difficulty}`);
+    setActionError(null);
     try {
       const result = await startExpedition(regionId, difficulty);
-      if (result.success) {
-        const expRes = await getExpeditions();
-        if (expRes.success) setExpeditions(expRes.data?.expeditions || []);
-        const charRes = await getCharacter();
-        if (charRes.success) setCharacter(charRes.data?.character);
+      if (result.success && result.data?.activity?.id) {
+        window.location.assign(`/expeditions/${result.data.activity.id}`);
+        return;
       }
+      setActionError(result.error || "Výpravu sa nepodarilo spustiť.");
+    } catch {
+      setActionError("Výpravu sa nepodarilo spustiť. Skús to znova.");
     } finally {
       setStarting(null);
     }
@@ -70,6 +73,16 @@ export default function ExpeditionsPage() {
       <PageHeader title="Expedície" subtitle="Preskúmaj temné regióny" />
 
       <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-4">
+        {actionError && (
+          <div
+            role="alert"
+            className="flex items-center gap-2 rounded border border-[#7f1d1d] bg-[#450a0a]/40 px-3 py-2 text-xs text-[#fca5a5]"
+          >
+            <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+            <span>{actionError}</span>
+          </div>
+        )}
+
         {activeExpedition && (
           <Card variant="highlighted">
             <CardContent className="py-3">
@@ -133,7 +146,7 @@ export default function ExpeditionsPage() {
                     <div className="space-y-2">
                       {DIFFICULTIES.map((diff) => {
                         const canAfford = energy >= diff.energyCost;
-                        const isStarting = starting === region.id;
+                        const isStarting = starting === `${region.id}:${diff.key}`;
                         return (
                           <div key={diff.key} className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
@@ -150,6 +163,7 @@ export default function ExpeditionsPage() {
                               disabled={!canAfford || isStarting || !!activeExpedition}
                               loading={isStarting}
                               onClick={() => handleStartExpedition(region.id, diff.key)}
+                              aria-label={`Spustiť výpravu: ${region.name}, ${diff.label}`}
                               className="text-[11px] h-7 px-2"
                             >
                               <Zap className="h-3 w-3" />

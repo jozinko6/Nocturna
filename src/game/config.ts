@@ -7,7 +7,10 @@ export type StatName = typeof STAT_NAMES[number]
 
 export const MAX_ATTRIBUTE = 50
 
-export const TRAINING_BASE_COST = 100
+// New characters start with every attribute at 5 and 200 gold. A base cost of
+// 10 keeps the first upgrade affordable (142 gold) while preserving the
+// intended superlinear progression.
+export const TRAINING_BASE_COST = 10
 export const TRAINING_COST_EXPONENT = 1.65
 
 export const ENERGY_REGEN_RATE = 1
