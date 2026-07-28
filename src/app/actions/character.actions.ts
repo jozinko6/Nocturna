@@ -212,6 +212,7 @@ export async function getCharacter() {
       .single()
 
     if (characterError || !character) {
+      console.error('Get character query error:', characterError)
       return { success: false, error: 'Character not found' }
     }
 

@@ -63,6 +63,14 @@ test.describe('New Player Vertical Slice', () => {
 
       await test.step('create the character and enter the game', async () => {
         await page.getByRole('button', { name: 'Vytvoriť postavu' }).click()
+        await expect.poll(async () => {
+          const { data: character } = await admin
+            .from('characters')
+            .select('id')
+            .eq('user_id', userId)
+            .maybeSingle()
+          return character?.id ?? null
+        }, { timeout: 15000 }).not.toBeNull()
         await expect(page).toHaveURL(/\/expeditions$/, { timeout: 30000 })
         await expect(page.getByText(characterName, { exact: true })).toBeVisible()
       })

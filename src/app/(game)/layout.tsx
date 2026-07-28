@@ -42,7 +42,11 @@ export default function GameLayoutWrapper({
         return;
       }
 
-      const charResult = await getCharacter();
+      let charResult = await getCharacter();
+      for (let attempt = 0; attempt < 2 && !charResult.success; attempt++) {
+        await new Promise((resolve) => setTimeout(resolve, 300));
+        charResult = await getCharacter();
+      }
       if (!charResult.success || !charResult.data?.character) {
         router.replace("/onboarding");
         return;

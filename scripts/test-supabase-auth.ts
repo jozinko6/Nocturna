@@ -102,6 +102,22 @@ async function main() {
     .insert({ character_id: character.id })
   if (statsError) throw statsError
 
+  const { error: characterReadError } = await first.client
+    .from('characters')
+    .select(`
+      *,
+      character_stats (*),
+      character_resources (*),
+      factions (*),
+      equipment_slots (
+        id, slot_type, item_id, created_at, updated_at,
+        character_items (id, template_id, quantity, item_templates (*))
+      )
+    `)
+    .eq('user_id', first.id)
+    .single()
+  if (characterReadError) throw characterReadError
+
   const { data: leakedStats, error: leakedStatsError } = await second.client
     .from('character_stats')
     .select('id')

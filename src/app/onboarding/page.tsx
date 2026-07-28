@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { Shield, ChevronRight, Check } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,7 +13,6 @@ import { PORTRAITS } from "@/game/onboarding";
 const STEPS = ["Frakcia", "Meno", "Portrét", "Prvá výprava"] as const;
 
 export default function OnboardingPage() {
-  const router = useRouter();
   const [step, setStep] = useState(0);
   const [factions, setFactions] = useState<any[]>([]);
   const [selectedFaction, setSelectedFaction] = useState<string | null>(null);
@@ -69,8 +67,7 @@ export default function OnboardingPage() {
         selectedPortrait
       );
       if (result.success) {
-        router.push("/expeditions");
-        router.refresh();
+        window.location.assign("/expeditions");
       } else {
         setError(result.error || "Nepodarilo sa vytvoriť postavu.");
       }
