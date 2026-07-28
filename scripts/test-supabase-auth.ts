@@ -69,6 +69,12 @@ async function main() {
   if (profileError) throw profileError
   assert(firstProfile.user_id === first.id, 'Auth profile trigger did not create the expected profile')
 
+  const { data: factions, error: factionsError } = await first.client
+    .from('factions')
+    .select('id, slug, name, description, passive_bonuses')
+  if (factionsError) throw factionsError
+  assert(factions.length >= 2, 'Authenticated players cannot read onboarding factions')
+
   const { data: leakedUser, error: leakedUserError } = await first.client
     .from('users')
     .select('id')

@@ -29,6 +29,8 @@ test.describe('New Player Vertical Slice', () => {
     })
     expect(error).toBeNull()
     expect(data.user).toBeTruthy()
+    if (!data.user) throw new Error('Supabase did not return the created test user')
+    const userId = data.user.id
 
     try {
       await test.step('redirect an anonymous player to login', async () => {
@@ -60,7 +62,7 @@ test.describe('New Player Vertical Slice', () => {
         await expect(page.getByText(characterName, { exact: true })).toBeVisible()
       })
     } finally {
-      await admin.auth.admin.deleteUser(data.user.id)
+      await admin.auth.admin.deleteUser(userId)
     }
   })
 })

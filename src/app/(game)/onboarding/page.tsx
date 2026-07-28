@@ -27,9 +27,18 @@ export default function OnboardingPage() {
 
   useEffect(() => {
     async function load() {
-      const result = await getFactions();
-      if (result.success) setFactions(result.data?.factions || []);
-      setLoading(false);
+      try {
+        const result = await getFactions();
+        if (result.success) {
+          setFactions(result.data?.factions || []);
+        } else {
+          setError(result.error || "Nepodarilo sa načítať frakcie.");
+        }
+      } catch {
+        setError("Nepodarilo sa načítať frakcie.");
+      } finally {
+        setLoading(false);
+      }
     }
     load();
   }, []);

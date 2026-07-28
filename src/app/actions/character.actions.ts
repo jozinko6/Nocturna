@@ -2,6 +2,8 @@
 
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
+import { getDb } from '@/lib/db/drizzle'
+import { factions as factionsTable } from '@/lib/db/schema'
 import { STARTING_GOLD, STARTING_STATS, EQUIPMENT_SLOT_TYPES, STAT_NAMES } from '@/game/config'
 import { maxHp, levelFromExperience, calculateStatTotal, attackPower } from '@/game/formulas'
 
@@ -145,14 +147,22 @@ export async function createCharacter(name: string, factionId: string, portraitU
 
 export async function getFactions() {
   try {
-    const supabase = await createClient()
-    const { data: factions, error } = await supabase
-      .from('factions')
-      .select('id, slug, name, description, passive_bonuses')
-    if (error) return { success: false, error: 'Failed to fetch factions' }
+    const factions = await getDb()
+      .select({
+        id: factionsTable.id,
+        slug: factionsTable.slug,
+        name: factionsTable.name,
+        description: factionsTable.description,
+        passiveBonuses: factionsTable.passiveBonuses,
+      })
+      .from(factionsTable)
 
     const mappedFactions = (factions || []).map((faction) => {
-      const bonuses = (faction.passive_bonuses || {}) as Record<string, unknown>
+      const rawBonuses = faction.passiveBonuses
+      const bonuses =
+        typeof rawBonuses === 'string'
+          ? JSON.parse(rawBonuses) as Record<string, unknown>
+          : (rawBonuses || {}) as Record<string, unknown>
       const passives = Object.entries(bonuses)
         .filter(([key, value]) => key !== 'color' && typeof value === 'number')
         .map(([key, value]) => ({
