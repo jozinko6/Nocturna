@@ -148,9 +148,29 @@ export async function getFactions() {
     const supabase = await createClient()
     const { data: factions, error } = await supabase
       .from('factions')
-      .select('id, slug, name, lore, color, passives')
+      .select('id, slug, name, description, passive_bonuses')
     if (error) return { success: false, error: 'Failed to fetch factions' }
-    return { success: true, data: { factions: factions || [] } }
+
+    const mappedFactions = (factions || []).map((faction) => {
+      const bonuses = (faction.passive_bonuses || {}) as Record<string, unknown>
+      const passives = Object.entries(bonuses)
+        .filter(([key, value]) => key !== 'color' && typeof value === 'number')
+        .map(([key, value]) => ({
+          key,
+          description: `${key.replace(/([A-Z])/g, ' $1').toLowerCase()}: ${Math.round(Number(value) * 100)} %`,
+        }))
+
+      return {
+        id: faction.id,
+        slug: faction.slug,
+        name: faction.name,
+        lore: faction.description,
+        color: typeof bonuses.color === 'string' ? bonuses.color : null,
+        passives,
+      }
+    })
+
+    return { success: true, data: { factions: mappedFactions } }
   } catch (error) {
     console.error('Get factions error:', error)
     return { success: false, error: 'An unexpected error occurred' }

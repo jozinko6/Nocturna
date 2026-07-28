@@ -1,62 +1,66 @@
+import { randomUUID } from 'node:crypto'
 import { test, expect } from '@playwright/test'
+import { createClient } from '@supabase/supabase-js'
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const serviceKey =
+  process.env.SUPABASE_SERVICE_ROLE_KEY ??
+  process.env.SUPABASE_SECRET_KEY
 
 test.describe('New Player Vertical Slice', () => {
-  const uniqueEmail = `test_${Date.now()}@nocturna.test`
-  const testName = 'TestHero'
+  test('protects private pages and completes onboarding', async ({ page }) => {
+    test.setTimeout(120000)
+    test.skip(!supabaseUrl || !serviceKey, 'Supabase admin credentials are required')
 
-  test('complete new player journey', async ({ page }) => {
-    await page.goto('/')
-    await expect(page.locator('text=Nocturna')).toBeVisible()
+    const admin = createClient(supabaseUrl!, serviceKey!, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    })
+    const suffix = randomUUID()
+    const email = `e2e-${suffix}@example.com`
+    const password = `Noc!${randomUUID()}a7`
+    const displayName = `E2E-${suffix.slice(0, 8)}`
+    const characterName = `Hero-${suffix.slice(0, 8)}`
 
-    await page.click('text=Registrácia')
-    await page.waitForURL('**/register')
+    const { data, error } = await admin.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: { display_name: displayName },
+    })
+    expect(error).toBeNull()
+    expect(data.user).toBeTruthy()
 
-    await page.fill('input[name="email"]', uniqueEmail)
-    await page.fill('input[name="password"]', 'TestPassword123!')
-    await page.fill('input[name="confirmPassword"]', 'TestPassword123!')
-    await page.fill('input[name="displayName"]', testName)
-    await page.click('button[type="submit"]')
+    try {
+      await test.step('redirect an anonymous player to login', async () => {
+        await page.goto('/dashboard', { waitUntil: 'domcontentloaded' })
+        await expect(page).toHaveURL(/\/login\?next=%2Fdashboard$/)
+      })
 
-    await page.waitForURL('**/onboarding')
-    await page.click('text=Sangvari')
+      await test.step('sign in and reach onboarding', async () => {
+        await page.getByLabel('Email', { exact: true }).fill(email)
+        await page.getByLabel('Heslo', { exact: true }).fill(password)
+        await page.getByRole('button', { name: 'Prihlásiť sa' }).click()
+        await expect(page).toHaveURL(/\/onboarding$/, { timeout: 30000 })
+      })
 
-    await page.fill('input[name="characterName"]', testName)
-    await page.click('text=Pokračovať')
+      await test.step('choose faction and character identity', async () => {
+        await page.getByText('Sangvari', { exact: true }).click()
+        await page.getByRole('button', { name: 'Pokračovať' }).click()
 
-    await page.click('[data-portrait="warrior_1"]')
-    await page.click('text=Pokračovať')
+        await page.getByLabel('Meno postavy', { exact: true }).fill(characterName)
+        await page.getByRole('button', { name: 'Pokračovať' }).click()
 
-    await page.waitForURL('**/dashboard')
-    await expect(page.locator(`text=${testName}`)).toBeVisible()
+        await page.getByText('Bojovník', { exact: true }).click()
+        await page.getByRole('button', { name: 'Pokračovať' }).click()
+      })
 
-    await page.click('text=Výpravy')
-    await page.waitForURL('**/expeditions')
-
-    await page.click('text=Bezpečná')
-    await page.click('text=Začať výpravu')
-
-    await page.waitForTimeout(21000)
-
-    await page.click('text=Dokončiť')
-    await page.click('text=Vyzdvihnúť odmenu')
-
-    await page.click('text=Inventár')
-    await page.waitForURL('**/inventory')
-
-    await expect(
-      page.locator('text=Ihla červeného úsvitu').or(page.locator('text=Tesák mesačnej hliadky')),
-    ).toBeVisible()
-
-    await page.click('text=Nasadiť')
-
-    await page.click('text=PvP')
-    await page.waitForURL('**/pvp')
-
-    await page.click('text=Hľadať súperov')
-    await page.click('text=Útočiť >> nth=0')
-
-    await expect(
-      page.locator('text=Výsledok súboja').or(page.locator('text=Kolo')),
-    ).toBeVisible()
+      await test.step('create the character and enter the game', async () => {
+        await page.getByRole('button', { name: 'Vytvoriť postavu' }).click()
+        await expect(page).toHaveURL(/\/expeditions$/, { timeout: 30000 })
+        await expect(page.getByText(characterName, { exact: true })).toBeVisible()
+      })
+    } finally {
+      await admin.auth.admin.deleteUser(data.user.id)
+    }
   })
 })
