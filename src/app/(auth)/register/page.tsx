@@ -33,12 +33,14 @@ export default function RegisterPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [serverError, setServerError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setErrors({});
     setServerError("");
+    setSuccessMessage("");
 
     const result = registerSchema.safeParse({
       email,
@@ -63,7 +65,13 @@ export default function RegisterPage() {
     try {
       const response = await signUp(email, password, displayName);
       if (response.success) {
-        router.push("/onboarding");
+        if (response.data?.requiresEmailConfirmation) {
+          setSuccessMessage(
+            "Účet bol vytvorený. Potvrď e-mail cez odkaz, ktorý sme ti poslali, a potom sa prihlás."
+          );
+        } else {
+          router.push("/onboarding");
+        }
       } else {
         setServerError(response.error || "Nastala chyba.");
       }
@@ -84,6 +92,11 @@ export default function RegisterPage() {
       {serverError && (
         <div className="mb-4 p-3 rounded-sm bg-[#2a1215] border border-[#5c2a2e] text-xs text-[#fca5a5]">
           {serverError}
+        </div>
+      )}
+      {successMessage && (
+        <div className="mb-4 p-3 rounded-sm bg-[#102419] border border-[#285c3d] text-xs text-[#86efac]">
+          {successMessage}
         </div>
       )}
 

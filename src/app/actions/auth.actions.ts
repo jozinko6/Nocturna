@@ -23,7 +23,7 @@ export async function signUp(email: string, password: string, displayName: strin
 
     const supabase = await createClient()
 
-    const { error: authError } = await supabase.auth.signUp({
+    const { data, error: authError } = await supabase.auth.signUp({
       email,
       password,
       options: { data: { display_name: displayName } },
@@ -35,7 +35,12 @@ export async function signUp(email: string, password: string, displayName: strin
 
     return {
       success: true,
-      data: { message: 'Account created successfully. Please check your email for verification.' },
+      data: {
+        requiresEmailConfirmation: !data.session,
+        message: data.session
+          ? 'Account created successfully.'
+          : 'Account created successfully. Please check your email for verification.',
+      },
     }
   } catch (error) {
     console.error('Sign up error:', error)

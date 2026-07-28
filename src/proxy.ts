@@ -43,6 +43,7 @@ function applySecurityHeaders(response: NextResponse): void {
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
   let response = NextResponse.next({ request })
+  let isAuthenticated = false
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseKey =
@@ -70,7 +71,8 @@ export async function proxy(request: NextRequest) {
       },
     })
 
-    await supabase.auth.getClaims()
+    const { data } = await supabase.auth.getClaims()
+    isAuthenticated = Boolean(data?.claims?.sub)
   }
 
   applySecurityHeaders(response)
@@ -114,6 +116,17 @@ export async function proxy(request: NextRequest) {
       { error: { code: 'MAINTENANCE_MODE', message: 'Prebieha údržba. Zmeny nie sú povolené.' } },
       { status: 503, headers: response.headers }
     )
+  }
+
+  const isPublicPath = PUBLIC_PATHS.includes(pathname)
+  const isApiPath = pathname.startsWith('/api/')
+  if (!isAuthenticated && !isPublicPath && !isApiPath && !isStaticAsset) {
+    const loginUrl = request.nextUrl.clone()
+    loginUrl.pathname = '/login'
+    loginUrl.searchParams.set('next', pathname)
+    const redirect = NextResponse.redirect(loginUrl)
+    applySecurityHeaders(redirect)
+    return redirect
   }
 
   return response
