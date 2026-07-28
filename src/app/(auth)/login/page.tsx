@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { signIn } from "@/app/actions/auth.actions";
+import { createClient } from "@/lib/supabase/client";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -23,8 +23,12 @@ export default function LoginPage() {
 
     setLoading(true);
     try {
-      const response = await signIn(email, password);
-      if (response.success) {
+      const supabase = createClient();
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      if (!signInError) {
         const requestedPath = new URLSearchParams(window.location.search).get("next");
         const destination =
           requestedPath?.startsWith("/") && !requestedPath.startsWith("//")
@@ -32,7 +36,7 @@ export default function LoginPage() {
             : "/dashboard";
         window.location.assign(destination);
       } else {
-        setError(response.error || "Nesprávne prihlasovacie údaje.");
+        setError(signInError.message);
       }
     } catch {
       setError("Nastala neočakávaná chyba.");
